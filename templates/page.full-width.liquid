@@ -1,0 +1,711 @@
+<!-- /templates/page.full-width.liquid -->
+
+	<div id="slider" class="slider">
+		<div class="slider-content">
+			<div class="slider-content-wrapper">
+				<div class="slider-content__item image-1"></div>
+				<div class="slider-content__item image-2"></div>
+				<div class="slider-content__item image-4"></div>
+				
+			</div>
+		</div>
+	</div>
+<style>
+	.slider {
+	position: relative;
+	height: 100%;
+	width: 100%;
+	overflow:hidden;
+	margin-top: -80px;
+     }
+
+
+     .slider-content {
+	position: relative;		
+	width: 100%;
+     }
+
+
+.slider-content-wrapper {
+	display: flex;
+	height:500px;
+	transition: transform 0.5s ease-in-out;
+}
+
+
+.slider-content__item {
+	flex: 1 0 100%;
+	width: 100%;
+	height: 100%;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+	font-size: 100px;
+	color: rgba(0,0,0,0.2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.image-1 {background-image: url(//cdn.shopify.com/s/files/1/0274/3376/2950/files/aboutluxat.jpg?v=1591145869);
+background-size: cover;
+background-repeat: no-repeat;
+}
+.image-2 {background-image: url(//cdn.shopify.com/s/files/1/0274/3376/2950/files/aboutluxat2.jpg?v=1591145874);
+background-size: cover;
+background-repeat: no-repeat;
+}
+
+.image-4 {background-image: url(//cdn.shopify.com/s/files/1/0274/3376/2950/files/aboutluxat4.jpg?v=1591145846);
+background-size: cover;
+background-repeat: no-repeat;
+}
+
+
+
+
+.slider-controls {
+	padding:20px;
+	text-align: center;
+}
+
+
+.slider-content__controls {
+	position:absolute;
+	top:0;left:0;
+	width: 100%;
+	height: 100%;
+	z-index:1;
+	/*transform: translateY(-50%);*/
+	/*padding:0 15px;*/
+}
+
+
+.prev-arrow, .next-arrow {
+	position:absolute;
+	top:50%;
+	transform: translateY(-50%);
+	cursor: pointer;
+	color:rgba(0,0,0, 0.3);
+	width: 20px;
+	transition: all 0.3s;
+}
+.prev-arrow {left: 20px;}
+.next-arrow {right: 20px;}
+
+.prev-arrow:hover,
+.next-arrow:hover {
+	cursor: pointer;
+	color:rgba(0,0,0, 0.7);
+}
+
+
+.dots {
+	position:absolute;
+	display: flex;
+	left:50%;
+	transform: translateX(-50%);
+	bottom:10%;
+}
+
+.dot {
+	cursor: pointer;
+	width: 8px;
+	height: 8px;
+	margin-right: 4px;
+	background-color: rgba(0,0,0, 0.3);
+	/*box-shadow: 0 0 5px 0px rgba(0,0,0,0.9);*/
+	border-radius: 50%;
+	transition:all 0.3s;
+}
+
+.dot:last-child {margin-right: 0;}
+.dot:hover {background-color: #fff;}
+.dot--active {background-color: rgba(255,255,255, 0.5);}
+
+
+button {
+    cursor: pointer;
+    margin-right: 8px;
+    border: none;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #fff;
+    color: #000;
+    transition: all 0.5s;
+}
+button:last-child {margin-right: 0;}
+button:hover {background-color: #3c3c3c;color:#fff;}
+button:focus {outline: none;}
+
+
+.disabled {
+	background-color: #DCCFCF;
+	color:#B0A8A8;
+	cursor: default;
+	pointer-events:none;
+}
+
+.d-none {display: none;}
+.active {opacity: 1;}
+.centered {
+	position:relative;
+	top:50%;
+	left:50%;
+	transform:translate(-50%,-50%);	
+}
+</style>
+<script>const slider = (function(){
+	
+	
+	const slider = document.getElementById("slider"); 
+	const sliderContent = document.querySelector(".slider-content"); 
+	const sliderWrapper = document.querySelector(".slider-content-wrapper"); 
+	const elements = document.querySelectorAll(".slider-content__item"); 
+	const sliderContentControls = createHTMLElement("div", "slider-content__controls"); 
+	let dotsWrapper = null; 
+	let prevButton = null; 
+	let nextButton = null;
+	let autoButton = null;
+	let leftArrow = null; 
+	let rightArrow = null;
+	let intervalId = null;
+	
+	
+	const itemsInfo = {
+		offset: 0, 
+		position: {
+			current: 0, 
+			min: 0, 
+			max: elements.length - 1 	
+		},
+		intervalSpeed: 2000, 
+
+		update: function(value) {
+			this.position.current = value;
+			this.offset = -value;
+		},
+		reset: function() {
+			this.position.current = 0;
+			this.offset = 0;
+		}	
+	};
+
+	const controlsInfo = {
+		buttonsEnabled: false,
+		dotsEnabled: false,
+		prevButtonDisabled: true,
+		nextButtonDisabled: false
+	};
+
+	
+	function init(props) {
+		
+		let {intervalSpeed, position, offset} = itemsInfo;
+		
+		
+		if (slider && sliderContent && sliderWrapper && elements) {
+			
+			if (props && props.intervalSpeed) {
+				intervalSpeed = props.intervalSpeed;
+			}
+			if (props && props.currentItem) {
+				if ( parseInt(props.currentItem) >= position.min && parseInt(props.currentItem) <= position.max ) {
+					position.current = props.currentItem;
+					offset = - props.currentItem;	
+				}
+			}
+			if (props && props.buttons) {
+				controlsInfo.buttonsEnabled = true;
+			}
+			if (props && props.dots) {
+				controlsInfo.dotsEnabled = true;
+			}
+			
+			_updateControlsInfo();
+			_createControls(controlsInfo.dotsEnabled, controlsInfo.buttonsEnabled);
+			_render();	
+		} else {
+			console.log("Разметка слайдера задана неверно. Проверьте наличие всех необходимых классов 'slider/slider-content/slider-wrapper/slider-content__item'");
+		}
+	}
+
+	
+	function _updateControlsInfo() {
+		const {current, min, max} = itemsInfo.position;
+		controlsInfo.prevButtonDisabled = current > min ? false : true;
+		controlsInfo.nextButtonDisabled = current < max ? false : true;
+	}
+
+	
+	function _createControls(dots = false, buttons = false) {
+		
+		
+		sliderContent.append(sliderContentControls);
+
+		
+		createArrows();
+		buttons ? createButtons() : null;
+		dots ? createDots() : null;
+		
+		
+		function createArrows() {
+			const dValueLeftArrow = "M31.7 239l136-136c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9L127.9 256l96.4 96.4c9.4 9.4 9.4 24.6 0 33.9L201.7 409c-9.4 9.4-24.6 9.4-33.9 0l-136-136c-9.5-9.4-9.5-24.6-.1-34z";
+			const dValueRightArrow = "M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z";
+			const leftArrowSVG = createSVG(dValueLeftArrow);
+			const rightArrowSVG = createSVG(dValueRightArrow);
+			
+			leftArrow = createHTMLElement("div", "prev-arrow");
+			leftArrow.append(leftArrowSVG);
+			leftArrow.addEventListener("click", () => updateItemsInfo(itemsInfo.position.current - 1))
+			
+			rightArrow = createHTMLElement("div", "next-arrow");
+			rightArrow.append(rightArrowSVG);
+			rightArrow.addEventListener("click", () => updateItemsInfo(itemsInfo.position.current + 1))
+
+			sliderContentControls.append(leftArrow, rightArrow);
+			
+			
+			function createSVG(dValue, color="currentColor") {
+				const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+				svg.setAttribute("viewBox", "0 0 256 512");
+				const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+				path.setAttribute("fill", color);
+				path.setAttribute("d", dValue);
+				svg.appendChild(path);	
+				return svg;
+			}
+		}
+
+		
+		function createDots() {
+			dotsWrapper = createHTMLElement("div", "dots");			
+			for(let i = 0; i < itemsInfo.position.max + 1; i++) {
+				const dot = document.createElement("div");
+				dot.className = "dot";
+				dot.addEventListener("click", function() {
+					updateItemsInfo(i);
+				})
+				dotsWrapper.append(dot);		
+			}
+			sliderContentControls.append(dotsWrapper);	
+		}
+		
+		
+		function createButtons() {
+			const controlsWrapper = createHTMLElement("div", "slider-controls");
+			prevButton = createHTMLElement("button", "prev-control", "Prev");
+			prevButton.addEventListener("click", () => updateItemsInfo(itemsInfo.position.current - 1))
+			
+			autoButton = createHTMLElement("button", "auto-control", "Auto");
+			autoButton.addEventListener("click", () => {
+				intervalId = setInterval(function(){
+					if (itemsInfo.position.current < itemsInfo.position.max) {
+						itemsInfo.update(itemsInfo.position.current + 1);
+					} else {
+						itemsInfo.reset();
+					}
+					_slideItem();
+				}, itemsInfo.intervalSpeed)
+			})
+
+			nextButton = createHTMLElement("button", "next-control", "Next");
+			nextButton.addEventListener("click", () => updateItemsInfo(itemsInfo.position.current + 1))
+
+			controlsWrapper.append(prevButton, autoButton, nextButton);
+			slider.append(controlsWrapper);
+		}
+	}
+
+	
+	function setClass(options) {
+		if (options) {
+			options.forEach(({element, className, disabled}) => {
+				if (element) {
+					disabled ? element.classList.add(className) : element.classList.remove(className)	
+				} else {
+					console.log("Error: function setClass(): element = ", element);
+				}
+			})
+		}
+	}
+
+	
+	function updateItemsInfo(value) {
+		itemsInfo.update(value);
+		_slideItem(true);	
+	}
+
+	
+	function _render() {
+		const {prevButtonDisabled, nextButtonDisabled} = controlsInfo;
+		let controlsArray = [
+			{element: leftArrow, className: "d-none", disabled: prevButtonDisabled},
+			{element: rightArrow, className: "d-none", disabled: nextButtonDisabled}
+		];
+		if (controlsInfo.buttonsEnabled) {
+			controlsArray = [
+				...controlsArray, 
+				{element:prevButton, className: "disabled", disabled: prevButtonDisabled},
+				{element:nextButton, className: "disabled", disabled: nextButtonDisabled}
+			];
+		}
+		
+		
+		setClass(controlsArray);
+
+		
+		sliderWrapper.style.transform = `translateX(${itemsInfo.offset*100}%)`;	
+		
+		
+		if (controlsInfo.dotsEnabled) {
+			if (document.querySelector(".dot--active")) {
+				document.querySelector(".dot--active").classList.remove("dot--active");	
+			}
+			dotsWrapper.children[itemsInfo.position.current].classList.add("dot--active");
+		}
+	}
+
+	function _slideItem(autoMode = false) {
+		if (autoMode && intervalId) {
+			clearInterval(intervalId);
+		}
+		_updateControlsInfo();
+		_render();
+	}
+
+	
+	function createHTMLElement(tagName="div", className, innerHTML) {
+		const element = document.createElement(tagName);
+		className ? element.className = className : null;
+		innerHTML ? element.innerHTML = innerHTML : null;
+		return element;
+	}
+
+	
+	return {init};
+}())
+
+slider.init({
+	
+	currentItem: 0,
+	buttons: true,
+	dots: true
+});</script>
+
+
+
+<header class="section-header text-center">
+  <h1 class="aboutnatalie" data-animation="slideInUp">NATALIE FLORES <br> The heart and soul behind 
+ <strong>LUXAT</strong></h1>
+  
+</header>
+<div class="wrapper">
+   <div class="rte">
+   <div class="aboutcontainer">
+        <div class="itemabout1" data-animation="fadeIn" data-animation-delay="220ms">
+            <img src="//cdn.shopify.com/s/files/1/0274/3376/2950/files/natalieabout1.jpg?v=1591148370" class="natalieaboutimg">
+
+        </div>
+        <div class="itemabout2" data-animation="fadeIn" data-animation-delay="250ms">
+           <p class="textabout1">
+               I’m an industrial and graphic designer absolutely in love with the interception of ceramics and product design, so I fuse traditional pottery techniques with my own modern-primitive design philosophy to create a series of objects that range from purely abstract to lifestyle functional pieces for the contemporary home. I’d like to think of my work as being sensual, gritty, and elegant. I use unique glazes to give my pieces abstract and gestural surfaces which I fired on a gas kiln that I built in my Miami studio.</p>
+           <p class="textabout2">
+              If you're interested in obtaining anything keep a look out on my <a class="linktag" href="https://www.instagram.com/luxatbynatalieflores/" target="_blank">Instagram</a> page where I'll make any announcements of when work is to be sold via my <a class="linktag" href="//luxat.net/collections" target="_blank">shop.</a> Or sign up to my  mailing list, as I often give advanced warning of when my shops will be live there.<br>
+              Please <a class="linktag" href="//luxat.net/pages/contact" target="_blank">contact</a> if you have any questions about any of the products or comissions. You can shop our line of handmade products <a class="linktag" href="//luxat.net/collections" target="_blank">here.</a> </p>
+
+        </div>
+
+   </div>
+ <div class="aboutcontainer">
+        
+        <div class="itemabout3" data-animation="slideInLeft" data-animation-delay="300ms">
+           <p class="textabout3">
+               Past</p>
+           <p class="textabout4">
+              Born 1976, Caracas - Venezuela <br>
+Graphic and Industrial Designer, graduate of the Instituto ProDiseño, Caracas, Venezuela. Graduate degree in Product Design from the Staatliche Akademie der Bildenden Kunste Stuttgart, Stuttgart, Germany (1999-2000). Winner of first place in the Contest for Designing Children’s Parks, organized by the city of Greven, Germany (Grevener Designpreise 2000). Received the DAAD Deutscher Akademischer Austauschdienst grant for graduate studies in Germany. Selected as exhibitor at the Centro de Arte La Estancia for her designs for the corporate images of Ipostel, the Venezuelan Postal System (1998) and the Taller Escuela Técnica de la Madera (2000). More than twenty years of experience working with visual identity, editorial design, and product design. </p>
+
+        </div>
+        <div class="itemabout4" data-animation="slideInRight" data-animation-delay="320ms">
+            <img src="//cdn.shopify.com/s/files/1/0274/3376/2950/files/natalieabout2.jpg?v=1591148383" class="natalieaboutimg">
+
+        </div>
+
+   </div>
+
+
+  {{ page.content }}
+  </div>
+</div>
+<section class="infoabout">
+ 
+	<div class="container">
+          
+          <div class="accordion">
+            <dl>
+              <dt>
+                <a href="#accordion1" aria-expanded="false" aria-controls="accordion1" class="accordion-title accordionTitle js-accordionTrigger">Exhibitions</a>
+              </dt>
+              <dd class="accordion-content accordionItem is-collapsed" id="accordion1" aria-hidden="true">
+                <ul class="ulaccordion">
+<li class="liaccordion">2015 Coral Gables Museum collective Miami, Fl</li>
+<li class="liaccordion">2016 Deering Estate collective Miami, Fl</li>
+<li class="liaccordion">2016 Tieton collective, Wa</li>
+<li class="liaccordion">2016 MDC Galleries of Art+ Design collective Miami, Fl</li>
+<li class="liaccordion">2017 Imago collective Miami, Fl</li>
+<li class="liaccordion">2017 Coral Gables Museum collective Miami, Fl</li>
+<li class="liaccordion">2018 Imago solo Miami, Fl</li>
+<li class="liaccordion">2019 Hartvest Project collective Miami, Fl</li>
+</ul>
+              </dd>
+              <dt>
+                <a href="#accordion2" aria-expanded="false" aria-controls="accordion2" class="accordion-title accordionTitle js-accordionTrigger">
+                  Qualifications</a>
+              </dt>
+              <dd class="accordion-content accordionItem is-collapsed" id="accordion2" aria-hidden="true">
+                <ul class="ulaccordion">
+<li class="liaccordion">1994-1998 Instituto ProDiseño, Caracas, Venezuela</li>
+<li class="liaccordion">1999-2000 Product Design from the Staatliche Akademie der Bildenden Kunste Stuttgart, Stuttgart, Germany</li>
+<li class="liaccordion">2001 Pratt Institute, New York / Hand Forged Iron
+</li>
+<li class="liaccordion">2002 Carpentry Instituto Artesanal Colonia Tovar (IACT)</li></ul>
+              </dd>
+              <dt>
+                <a href="#accordion3" aria-expanded="false" aria-controls="accordion3" class="accordion-title accordionTitle js-accordionTrigger">
+                  Workshops
+                </a>
+              </dt>
+              <dd class="accordion-content accordionItem is-collapsed" id="accordion3" aria-hidden="true">
+                <ul class="ulaccordion">
+<li class="liaccordion">2015 Simon Leach, Miami, Fl.</li>
+<li class="liaccordion">2015 Jenny Mendez, Miami, Fl.</li>
+<li class="liaccordion">2016 Mami Kato, Barcelona, Spain.</li>
+<li class="liaccordion">2016 Shozo Michikawa, Barcelona, Spain.</li>
+<li class="liaccordion">2016 Lisa Ohr, Miami,Fl.</li>
+<li class="liaccordion">2018 Alberto Bustos Miami, FL.</li>
+<li class="liaccordion">2018 Adam Field Miami, FL.</li>
+<li class="liaccordion">2018 Peter Callas Miami, FL.</li>
+<li class="liaccordion">2019 Martin Cheek Miami, FL.</li>
+<li class="liaccordion">2019 Julie Moon Miami, FL.</li>
+<li class="liaccordion">2020 Steve Loucks Miami, FL.</li> </ul>
+              </dd>
+              <dt>
+                <a href="#accordion3" aria-expanded="false" aria-controls="accordion3" class="accordion-title accordionTitle js-accordionTrigger">
+                  Awards 
+                </a>
+              </dt>
+              <dd class="accordion-content accordionItem is-collapsed" id="accordion3" aria-hidden="true">
+                <ul class="ulaccordion">
+
+<li class="liaccordion">2000 First Prize, Designing Children’s Parks, organized by the city of Greven, Germany (Grevener Designpreise 2000)
+</li>
+<li class="liaccordion">2015 Second Prize, Miami Ceramics League Exhibition At the Coral Gables Museum</li>
+<li class="liaccordion">2016 First Prize, Miami Ceramics League Exhibition At the Deering Estate</li>
+<li class="liaccordion">2017 Second Prize, Miami Ceramics League Exhibition Imago collective Miami, Fl</li>
+</ul>
+              </dd>
+            </dl>
+          </div>
+        </div>
+        <style>
+        	
+.heading-primary {
+  font-size:2em;
+  padding:2em;
+  text-align:center;
+}
+.accordion dl,
+.accordion-list {
+   
+   &:after {
+       content: "";
+       display:block;
+       height:1em;
+       width:100%;
+       background-color:darken(#38cc70, 10%);
+     }
+}
+.accordion dd,
+.accordion__panel {
+   
+   font-size:1em;
+   line-height:1.5em; 
+}
+.accordion p {
+  padding:1em 2em 1em 2em;
+}
+
+.accordion {
+    position:relative;
+    
+}
+.container {
+  max-width:960px;
+  margin:0 auto;
+  padding:2em 0 2em 0;
+}
+.accordionTitle,
+.accordion__Heading {
+   border-bottom: 1px solid;
+   text-align:center;
+     font-weight:700; 
+          padding:2em;
+          display:block;
+          text-decoration:none;
+          color:#000;
+          transition:background-color 0.5s ease-in-out;
+          font-size: 22px;
+font-weight: 200;
+letter-spacing: 2px;
+text-transform: uppercase;
+  border-bottom:1px solid darken(#38cc70, 5%);
+  &:before {
+   content: "+";
+   font-size:1.5em;
+   line-height:0.5em;
+   float:left; 
+   transition: transform 0.3s ease-in-out;
+  }
+  &:hover {
+    background-color:darken(#38cc70, 10%);
+  }
+}
+.accordionTitle:hover{
+	background-color: #aeaeae;
+	color:#fff;
+}
+
+.accordionTitleActive, 
+.accordionTitle.is-expanded {
+   background-color:darken(#38cc70, 10%);
+    &:before {
+     
+      transform:rotate(-225deg);
+    }
+}
+.accordionItem {
+    height:auto;
+    overflow:hidden; 
+    //SHAME: magic number to allow the accordion to animate
+    
+     max-height:50em;
+    transition:max-height 1s;   
+ 
+    
+    @media screen and (min-width:48em) {
+         max-height:15em;
+        transition:max-height 0.5s
+        
+    }
+    
+   
+}
+ 
+.accordionItem.is-collapsed {
+    max-height:0;
+}
+.no-js .accordionItem.is-collapsed {
+  max-height: auto;
+}
+.animateIn {
+     animation: accordionIn 0.45s normal ease-in-out both 1; 
+}
+.animateOut {
+     animation: accordionOut 0.45s alternate ease-in-out both 1;
+}
+@keyframes accordionIn {
+  0% {
+    opacity: 0;
+    transform:scale(0.9) rotateX(-60deg);
+    transform-origin: 50% 0;
+  }
+  100% {
+    opacity:1;
+    transform:scale(1);
+  }
+}
+
+@keyframes accordionOut {
+    0% {
+       opacity: 1;
+       transform:scale(1);
+     }
+     100% {
+          opacity:0;
+           transform:scale(0.9) rotateX(-60deg);
+       }
+}
+
+        </style>
+<script type="text/javascript">
+	(function(){
+	var d = document,
+	accordionToggles = d.querySelectorAll('.js-accordionTrigger'),
+	setAria,
+	setAccordionAria,
+	switchAccordion,
+  touchSupported = ('ontouchstart' in window),
+  pointerSupported = ('pointerdown' in window);
+  
+  skipClickDelay = function(e){
+    e.preventDefault();
+    e.target.click();
+  }
+
+		setAriaAttr = function(el, ariaType, newProperty){
+		el.setAttribute(ariaType, newProperty);
+	};
+	setAccordionAria = function(el1, el2, expanded){
+		switch(expanded) {
+      case "true":
+      	setAriaAttr(el1, 'aria-expanded', 'true');
+      	setAriaAttr(el2, 'aria-hidden', 'false');
+      	break;
+      case "false":
+      	setAriaAttr(el1, 'aria-expanded', 'false');
+      	setAriaAttr(el2, 'aria-hidden', 'true');
+      	break;
+      default:
+				break;
+		}
+	};
+//function
+switchAccordion = function(e) {
+  console.log("triggered");
+	e.preventDefault();
+	var thisAnswer = e.target.parentNode.nextElementSibling;
+	var thisQuestion = e.target;
+	if(thisAnswer.classList.contains('is-collapsed')) {
+		setAccordionAria(thisQuestion, thisAnswer, 'true');
+	} else {
+		setAccordionAria(thisQuestion, thisAnswer, 'false');
+	}
+  	thisQuestion.classList.toggle('is-collapsed');
+  	thisQuestion.classList.toggle('is-expanded');
+		thisAnswer.classList.toggle('is-collapsed');
+		thisAnswer.classList.toggle('is-expanded');
+ 	
+  	thisAnswer.classList.toggle('animateIn');
+	};
+	for (var i=0,len=accordionToggles.length; i<len; i++) {
+		if(touchSupported) {
+      accordionToggles[i].addEventListener('touchstart', skipClickDelay, false);
+    }
+    if(pointerSupported){
+      accordionToggles[i].addEventListener('pointerdown', skipClickDelay, false);
+    }
+    accordionToggles[i].addEventListener('click', switchAccordion, false);
+  }
+})();
+</script>
+
+	
+</section>
+
+<section class="lastimg">
+	
+</section>
+
+
+{% section 'newsletter' %}
