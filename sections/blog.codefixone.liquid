@@ -1,0 +1,193 @@
+
+{{ "home.css" | asset_url | stylesheet_tag }}
+{{ "blog.css" | asset_url | stylesheet_tag }}
+
+
+<script>
+  var blogHandle = {{ blog.handle | json }} || '';
+  var popularProducts = {{ collections[blog.handle].products | json }}.slice(0,8) || []; 
+  var recommendated_products = {{ collections[blog.handle].products | json }}.slice(0,8) || [];
+</script>
+
+{% assign main_category = blog.handle %}
+
+<section class="banner-blog-header the-well">
+
+  {% if blog.handle contains 'well' %}
+    <nav class="breadcrumb" role="navigation" aria-label="breadcrumbs">
+        <a rel="noopener noreferrer" href="/pages/the-well" title="{{ 'general.general.the_well' | t }}">{{ 'general.general.the_well' | t }}</a>
+        <span aria-hidden="true" class="slash">/</span>
+        <span>{{ blog.title }}</span>
+    </nav>
+  {% endif %}
+
+  <div class="header-wrapper">
+    <h2 class="banner-blog-header-title">{{ blog.title }}</h2>
+    <h3 class="banner-blog-header-subtitle">
+    {% if blog.handle == 'eat-well' %}
+      {{ 'the_well.eat_well_desc' | t }}
+    {% endif %}
+    {% if blog.handle == 'move-well' %}
+      {{ 'the_well.move_well_desc' | t }}
+    {% endif %}
+    {% if blog.handle == 'feel-well' %}
+      {{ 'the_well.feel_well_desc' | t }}
+    {% endif %}
+    {% if blog.handle == 'get-well' %}
+      {{ 'the_well.get_well_desc' | t }}
+    {% endif %}
+    {% if blog.handle == 'live-well' %}
+      {{ 'the_well.live_well_desc' | t }}
+    {% endif %}
+    </h3>
+  </div>
+
+  <div class="banner-blog-header-mask">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 48" width="100%">
+      <path fill="#fff" d="M0,48V0S457.36,34.63,800,34.63,1600,0,1600,0l1,48Z"/>
+    </svg>
+  </div>
+
+</section>
+
+<div class="container blog-container">
+
+  {%- comment -%}
+    Blogs
+  {%- endcomment -%}
+
+  {% capture blogBanner %}
+    <section class="health-concierge" style="background-image: url('{{ 'banner-concierge-the-well.jpg' | asset_url }}');">
+      <div class="health-concierge-wrapper">
+        <h3 class="health-concierge-title">{{ 'the_well.concierge.title' | t }}</h3>
+        <p class="health-concierge-description">{{ 'the_well.concierge.description' | t }}</p>
+        <a rel="noopener noreferrer" href="{{ 'the_well.concierge.url' | t }}" class="btn btn-primary">{{ 'the_well.concierge.btn_label' | t }}</a>
+      </div>
+    </section>
+  {% endcapture %}
+
+  {% capture recommendatedCarousel %}
+   
+       <section class="related-products recommended-wrapper">
+      <div class="related-products-content recommended-products-carousel">
+        <h2>
+          {{ 'the_well.products_to_help' | t }}{{ blog.handle | replace: '-', ' ' | downcase }}
+        </h2>
+        <div class="row">
+          <div class="col-12">
+              <div id="recommendatedCarousel">
+ 
+                <div class="products-carousel">
+                  {% paginate collections[blogHandle].products by 12 %}
+                    {% for item in collections[blogHandle].products %}
+                      <div class="product-item">
+                        <a rel="noopener noreferrer" href="{{ item.url }}" data-id="{{ item.id }}" data-title="{{ item.title }}" data-vendor="{{ item.vendor }}">
+                            {% if item.compare_at_price > item.price %}
+                            <div class="product-sale">
+                                <span>{{ 'recommendation_carousel.special_offer' | t }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="product-image" style="background-image: url('{{ item.featured_image.src | img_url: '570x570' }}');">
+                                {%
+                                include 'rimg',
+                                img: item.featured_image,
+                                alt: item.title,
+                                size: '325x243',
+                                lazy: false
+                                %}
+                            </div>
+                            <div class="product-description">
+                                <p class="product-title">{{ item.title | capitalize }}</p>
+                                <p class="product-brand">{{ item.vendor }}</p>
+                                <div class="product-prices">
+                                  <p class="product-price">{{ item.price | money }}</p>
+                                  {% if item.compare_at_price %}
+                                    {% if item.compare_at_price > item.price %}
+                                      <p class="product-regprice">Reg {{ item.compare_at_price | money }}</p>
+                                    {% endif %}
+                                  {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                      </div>
+                    {% endfor %}
+                  {% endpaginate %}
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+   
+    
+  {% endcapture %}
+
+
+  {% assign blogName = blog %}
+  {%- comment -%}
+  {% assign blogName = blogs['the-well'] %}
+  {%- endcomment -%}
+  {% assign count = 1 %}
+  {% paginate blogName.articles by 16 %}
+
+    <div class="blog-posts categories">
+
+      {% for article in blogName.articles reversed %}
+        {% assign numArticles = blogName.articles.size %}
+        {% if count == 7 %}
+            </div>
+          </div>
+
+          {{ recommendatedCarousel }}
+
+          <div class="container">
+            <div class="blog-posts categories">
+        {% endif %}
+
+        {% unless blog.handle contains 'well' %}
+            </div>
+          </div>
+
+          {{ recommendatedCarousel }}
+
+          <div class="container">
+            <div class="blog-posts categories">
+        {% endunless %}
+
+        {% if count == 13 %}
+            </div>
+          </div>
+
+          {{ blogBanner }}
+
+          <div class="container">
+            <div class="blog-posts categories">
+        {% endif %}
+        {% include 'article-grid-item' %}
+        {% assign count = count | plus: 1 %}
+      {% endfor %}
+
+      {% if count <= 17 %}
+        </div>
+      {% endif %}
+
+    </div>
+
+    {% if paginate.previous or paginate.next %}
+      {% include 'pagination' %}
+    {% endif %}
+
+    {% if numArticles >= 1 and numArticles <= 5 %}
+      {{ recommendatedCarousel }}
+      {{ blogBanner }}
+    {% endif %}
+
+    {% if numArticles >= 6 and numArticles <= 12 %}
+      {{ blogBanner }}
+    {% endif %}
+
+  {% endpaginate %}
+</div>
+
+{{ 'blog.js' | asset_url | script_tag }}
